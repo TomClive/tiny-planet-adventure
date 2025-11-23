@@ -14,8 +14,8 @@ function pseudoNoise(x, y, z) {
 }
 
 // Planet Geometry
-// Detail 5 = ~20k faces. Detail 20 crashes browsers (millions of faces).
-const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 5);
+// Detail 4 = ~5k faces. Safe for all devices.
+const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 4);
 
 // Convert to non-indexed for "Flat Shading" / Crystal look
 // This splits vertices so each face has unique normals

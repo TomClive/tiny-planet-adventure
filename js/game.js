@@ -182,15 +182,24 @@ export function handleAction() {
         document.getElementById('ui-layer').classList.remove('hidden');
         resetInputs();
         
-        // TELEPORT PLAYER & CAMERA
-        playerWrapper.position.set(0, CFG.planetRadius + 5, 0);
+        // TELEPORT PLAYER HIGH ABOVE SPAWN
+        // Use a safe height (Radius + 20) to ensure we don't spawn inside a mountain
+        playerWrapper.position.set(0, CFG.planetRadius + 20, 0);
+        playerWrapper.quaternion.identity(); // Reset rotation so Up is Y
         
-        // Snap camera immediately to behind player to avoid "blue void" fly-in
+        // Reset Physics
+        state.playerVerticalSpeed = 0;
+        
+        // SNAP CAMERA
+        // Force the camera to the correct position relative to the NEW player position immediately
         const snapOffset = new THREE.Vector3(0, CFG.camHeight, CFG.camDistance);
-        // We assume default rotation initially for the snap
-        snapOffset.add(playerWrapper.position);
-        camera.position.copy(snapOffset);
+        camera.position.copy(playerWrapper.position).add(snapOffset);
+        camera.up.set(0, 1, 0); // Explicitly set Up vector for North Pole spawn
         camera.lookAt(playerWrapper.position);
+        
+        // Update Light immediately
+        dirLight.position.copy(camera.position).add(new THREE.Vector3(10, 20, 10));
+        dirLight.target = playerWrapper;
     } 
     else if (state.gameState === "PLAYING" && state.canInteract && state.keys['Space']) {
         startDialogue();
