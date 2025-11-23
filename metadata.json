@@ -1,0 +1,5 @@
+{
+  "name": "Tiny Planet Fork RPG",
+  "description": "A 3D platformer where you control a box on a tiny planet, collecting coins and avoiding slimes.",
+  "requestFramePermissions": []
+}

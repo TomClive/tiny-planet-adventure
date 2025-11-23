@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Waddle Box RPG</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Fredoka:wght@300..700&family=VT323&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        'title': ['"Fredoka"', 'sans-serif'],
+                        'hand': ['"Amatic SC"', 'cursive'],
+                        'pixel': ['"VT323"', 'monospace'],
+                    },
+                    boxShadow: {
+                        'hard': '2px 2px 0 rgba(0,0,0,0.5)',
+                        'btn': '4px 4px 0px black',
+                        'btn-active': '0px 0px 0px black',
+                        'play': '6px 6px 0px black',
+                        'play-active': '0px 0px 0px black',
+                    },
+                    colors: {
+                        'waddle-yellow': '#FFD700',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .text-stroke-black {
+            -webkit-text-stroke: 2px black;
+            text-shadow: 4px 4px 0px #000;
+        }
+        
+        /* 3D Cube for Title */
+        .cube-scene {
+            width: 100px;
+            height: 100px;
+            perspective: 400px;
+        }
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateY(-25deg) rotateX(-10deg);
+            animation: float 3s ease-in-out infinite, waddle 1s ease-in-out infinite alternate;
+            transition: transform 0.5s ease;
+        }
+        .cube-face {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: #FFD700;
+            border: 4px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .face-front  { transform: rotateY(  0deg) translateZ(50px); }
+        .face-back   { transform: rotateY(180deg) translateZ(50px); }
+        .face-right  { transform: rotateY( 90deg) translateZ(50px); }
+        .face-left   { transform: rotateY(-90deg) translateZ(50px); }
+        .face-top    { transform: rotateX( 90deg) translateZ(50px); }
+        .face-bottom { transform: rotateX(-90deg) translateZ(50px); }
+        
+        .eyes { display: flex; gap: 30px; margin-bottom: 10px; }
+        .eye { width: 12px; height: 12px; background: black; border-radius: 50%; }
+        .mouth {
+            width: 20px; height: 10px;
+            border-bottom: 4px solid black;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .cube:hover { transform: rotateY(0deg) scale(1.1); animation-play-state: paused; }
+        .cube:hover .mouth { width: 30px; height: 15px; border-radius: 0 0 15px 15px; border: 4px solid black; border-top: 0; background: #333; }
+
+        @keyframes float { 0%, 100% { top: 0; } 50% { top: -10px; } }
+        @keyframes waddle { 0% { transform: rotateY(-25deg) rotateZ(-5deg); } 100% { transform: rotateY(-25deg) rotateZ(5deg); } }
+    </style>
+
+    <!-- Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+        "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
+      }
+    }
+    </script>
+</head>
+<body class="m-0 overflow-hidden bg-[#7cdbd5] font-title select-none touch-none text-white">
+
+    <!-- GAME UI LAYER -->
+    <div id="ui-layer" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-5 box-border z-10 font-pixel text-2xl tracking-wide hidden">
+        <!-- Interaction Prompt -->
+        <div id="interact-prompt" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mt-[80px] hidden">
+            <div class="bg-black/70 text-white px-6 py-2 rounded-full border-2 border-white animate-bounce font-hand text-3xl">
+                PRESS SPACE TO TALK
+            </div>
+        </div>
+
+        <!-- Dialogue Box -->
+        <div id="dialogue-box" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-[90%] max-w-3xl bg-white text-black border-[4px] border-black rounded-xl p-6 shadow-hard-lg hidden pointer-events-auto">
+            <h3 id="dialogue-name" class="font-bold text-2xl text-teal-600 mb-2">Stranger</h3>
+            <p id="dialogue-text" class="font-hand text-3xl font-bold leading-relaxed">Hello traveler!</p>
+            <div class="text-right mt-2 text-sm text-gray-500 font-sans">Press SPACE to continue</div>
+        </div>
+        
+        <div id="mobile-hint" class="hidden lg:hidden absolute bottom-[20px] left-5 right-5 text-center text-white/80 text-xl font-bold font-title">
+            Joystick to Move • Tap to Jump
+        </div>
+    </div>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="absolute inset-0 flex flex-col md:flex-row items-center justify-center bg-gradient-to-b from-teal-900/40 via-transparent to-teal-900/80 pointer-events-auto z-[100] gap-10 md:gap-20">
+        
+        <!-- Left: 3D Character -->
+        <div class="cube-scene mb-10 md:mb-0 scale-150 md:scale-[2.5]">
+            <div class="cube">
+                <div class="cube-face face-front">
+                    <div class="flex flex-col items-center">
+                        <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+                        <div class="mouth"></div>
+                    </div>
+                </div>
+                <div class="cube-face face-back"></div>
+                <div class="cube-face face-right"></div>
+                <div class="cube-face face-left"></div>
+                <div class="cube-face face-top"></div>
+                <div class="cube-face face-bottom"></div>
+            </div>
+        </div>
+
+        <!-- Right: Menu -->
+        <div class="flex flex-col items-center md:items-start text-center md:text-left z-10">
+            <div class="mb-8">
+                <h1 class="m-0 text-7xl md:text-8xl font-black text-waddle-yellow text-stroke-black tracking-tighter leading-none">
+                    WADDLE<br>BOX
+                </h1>
+                <p class="font-hand text-4xl text-white drop-shadow-[2px_2px_0_#000] mt-2 transform -rotate-2">
+                    Adventure
+                </p>
+            </div>
+
+            <button id="btn-play" class="bg-waddle-yellow text-black border-[3px] border-black text-3xl font-black py-4 px-12 rounded-xl shadow-play cursor-pointer transform hover:-translate-y-1 transition-all active:translate-x-[6px] active:translate-y-[6px] active:shadow-play-active hover:bg-yellow-300 w-full md:w-auto">
+                EXPLORE
+            </button>
+            
+            <div class="mt-6 text-white/90 font-hand text-2xl bg-black/20 p-4 rounded-lg border border-white/20">
+                A tiny peaceful world.
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
