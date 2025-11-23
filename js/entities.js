@@ -73,6 +73,11 @@ scene.add(planet);
 export const playerWrapper = new THREE.Group();
 // Start slightly above to avoid clipping before physics kicks in
 playerWrapper.position.set(0, CFG.planetRadius + 10, 0);
+
+// DEBUG: Add axes to player to confirm it exists and where it is facing
+const playerAxes = new THREE.AxesHelper(5);
+playerWrapper.add(playerAxes);
+
 scene.add(playerWrapper);
 dirLight.target = playerWrapper;
 
@@ -194,7 +199,7 @@ export function buildWorld() {
     state.npcs = [];
 
     // Re-add planet
-    scene.add(planet);
+    if (!planet.parent) scene.add(planet);
 
     spawnObject('tree', 150);
     spawnObject('rock', 80);
@@ -202,4 +207,6 @@ export function buildWorld() {
     spawnNPC(1, ["Welcome to Tiny Planet!", "It's peaceful here.", "Try climbing the mountain."]);
     spawnNPC(2, ["I saw a huge rock over there.", "The view is great from the top.", "Take it easy."]);
     spawnNPC(3, ["Did you know this world loops?", "Just keep walking.", "See you around!"]);
+    
+    console.log("[ENTITIES] World Built. Planet Radius:", CFG.planetRadius);
 }

@@ -9,6 +9,11 @@ const clock = new THREE.Clock();
 const tempQuat = new THREE.Quaternion();
 const gravityRaycaster = new THREE.Raycaster();
 
+// DEBUG: Expose to window for console debugging
+window.gameDebug = { state, camera, playerWrapper, scene };
+
+let debugLogTimer = 0;
+
 export function startGameLoop() {
     buildWorld();
     state.gameState = "WAITING";
@@ -16,10 +21,19 @@ export function startGameLoop() {
     // Initial camera position for title screen
     camera.position.set(0, CFG.planetRadius + 60, 60);
     camera.lookAt(0, 0, 0);
+    
+    console.log("[GAME] Loop Started. Waiting for input...");
 
     function animate() {
         requestAnimationFrame(animate);
         const dt = Math.min(clock.getDelta(), 0.1);
+        
+        // DEBUG: Heartbeat log every 2 seconds
+        debugLogTimer += dt;
+        if(debugLogTimer > 2.0 && state.gameState === "PLAYING") {
+            debugLogTimer = 0;
+            console.log(`[STATUS] PlayerPos: ${playerWrapper.position.toArray().map(n=>n.toFixed(1))} | CamPos: ${camera.position.toArray().map(n=>n.toFixed(1))} | Grounded: ${state.isGrounded}`);
+        }
 
         // --- TITLE SCREEN ANIMATION ---
         if(state.gameState === "WAITING") {
@@ -35,6 +49,13 @@ export function startGameLoop() {
 
         // --- GAMEPLAY ---
         
+        // SAFETY: NaN Check
+        if (isNaN(playerWrapper.position.x)) {
+            console.error("Player Position became NaN! Resetting...");
+            playerWrapper.position.set(0, CFG.planetRadius + 10, 0);
+            state.playerVerticalSpeed = 0;
+        }
+
         // 1. INPUT HANDLING
         let turn = 0;
         let moveSpeed = 0;
@@ -73,7 +94,10 @@ export function startGameLoop() {
             const playerDir = playerPos.clone().sub(planetCenter).normalize();
             
             // Cast from slightly above predicted position
-            const rayOrigin = playerPos.clone().add(playerDir.multiplyScalar(5));
+            // Ensure we don't start inside
+            const rayStartDist = Math.max(playerPos.length(), CFG.planetRadius + 5);
+            const rayOrigin = playerDir.clone().multiplyScalar(rayStartDist);
+            
             gravityRaycaster.set(rayOrigin, playerDir.clone().negate());
             
             const intersects = gravityRaycaster.intersectObject(planet);
@@ -102,6 +126,9 @@ export function startGameLoop() {
             } else {
                 state.isGrounded = false;
             }
+            
+            // SAFETY: Don't fall through center
+            if(nextDist < 10) nextDist = CFG.planetRadius;
 
             // Apply Height
             playerWrapper.position.copy(playerDir.multiplyScalar(nextDist));
@@ -118,9 +145,13 @@ export function startGameLoop() {
             // 4. ORIENTATION (Align to planet surface)
             const currentUp = new THREE.Vector3(0, 1, 0).applyQuaternion(playerWrapper.quaternion);
             const targetUp = playerWrapper.position.clone().normalize();
-            tempQuat.setFromUnitVectors(currentUp, targetUp);
-            playerWrapper.quaternion.premultiply(tempQuat);
             
+            // Prevent NaN quaternion if vectors are parallel or zero
+            if (currentUp.lengthSq() > 0.1 && targetUp.lengthSq() > 0.1) {
+                 tempQuat.setFromUnitVectors(currentUp, targetUp);
+                 playerWrapper.quaternion.premultiply(tempQuat);
+            }
+
             // Waddle Animation
             if (moveSpeed !== 0) {
                 playerMesh.rotation.z = Math.sin(clock.getElapsedTime() * 15) * 0.1;
@@ -162,11 +193,13 @@ export function startGameLoop() {
         
         // Lerp camera position
         camera.position.lerp(idealOffset, CFG.camLag);
+        
+        // Look at player, but ensure up vector is correct
         camera.lookAt(playerWrapper.position);
         
         // Ensure camera up is planet up
         const camUp = playerWrapper.position.clone().normalize();
-        camera.up.copy(camUp); // Important for spherical worlds
+        if(camUp.lengthSq() > 0.1) camera.up.copy(camUp); 
 
         // Lighting
         dirLight.position.copy(camera.position).add(new THREE.Vector3(10, 20, 10));
@@ -178,6 +211,7 @@ export function startGameLoop() {
 
 export function handleAction() {
     if (state.gameState === "WAITING") {
+        console.log("[GAME] STARTING GAME...");
         state.gameState = "PLAYING";
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('ui-layer').classList.remove('hidden');
@@ -186,12 +220,16 @@ export function handleAction() {
         // TELEPORT PLAYER HIGH ABOVE SPAWN
         // Use a safe off-center position to avoid North Pole singularities
         // Spawning at z=5 ensures we have a valid forward vector different from Up
-        playerWrapper.position.set(0, CFG.planetRadius + 20, 5);
+        const spawnY = CFG.planetRadius + 10;
+        console.log(`[GAME] Spawning player at (0, ${spawnY}, 5)`);
+        
+        playerWrapper.position.set(0, spawnY, 5);
         playerWrapper.quaternion.identity(); // Reset rotation so Up is Y
         
         // Rotate player slightly to align with the new surface normal at (0, R, 5)
         const targetUp = playerWrapper.position.clone().normalize();
         playerWrapper.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), targetUp);
+        playerWrapper.updateMatrixWorld(true); // FORCE UPDATE
 
         // Reset Physics
         state.playerVerticalSpeed = 0;
@@ -202,10 +240,13 @@ export function handleAction() {
         // Apply initial player rotation to offset
         snapOffset.applyQuaternion(playerWrapper.quaternion);
         
-        camera.position.copy(playerWrapper.position).add(snapOffset);
+        const camPos = playerWrapper.position.clone().add(snapOffset);
+        camera.position.copy(camPos);
         camera.up.copy(targetUp);
         camera.lookAt(playerWrapper.position);
         camera.updateProjectionMatrix(); // Ensure internals are updated
+        
+        console.log("[GAME] Camera snapped to:", camera.position);
         
         // Update Light immediately
         dirLight.position.copy(camera.position).add(new THREE.Vector3(10, 20, 10));

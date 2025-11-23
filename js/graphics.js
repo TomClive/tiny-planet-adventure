@@ -4,8 +4,13 @@ import { CFG } from './config.js';
 
 export const scene = new THREE.Scene();
 scene.background = new THREE.Color(CFG.colors.bg);
-// Fog disabled to prevent rendering issues in Orthographic view
+// Fog disabled to debug visibility
 // scene.fog = new THREE.Fog(CFG.colors.bg, CFG.planetRadius * 0.5, CFG.planetRadius * 1.5);
+
+// DEBUG: Add global axes helper to verify camera orientation
+// Red = X, Green = Y, Blue = Z
+const globalAxes = new THREE.AxesHelper(100);
+scene.add(globalAxes);
 
 export const worldLayer = new THREE.Group();
 scene.add(worldLayer);
@@ -17,7 +22,6 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // RPG usually benefits from Perspective, but Ortho is key to this art style. 
 // We adjust the frustum to fit the larger world.
-// INCREASED VIEW SIZE to ensure we see the player on start
 const d = 60; 
 const aspect = window.innerWidth / window.innerHeight;
 // Increased Far plane to 4000 to prevent clipping
