@@ -1,3 +1,4 @@
+
 export const CFG = {
     colors: {
         bg: 0x7cdbd5, // Teal sky
@@ -14,8 +15,8 @@ export const CFG = {
     planetRadius: 120, // Much larger world
     moveSpeed: 12.0,
     turnSpeed: 4.0,
-    jumpForce: 18.0,
-    gravity: 50.0,
+    jumpForce: 25.0, // Stronger jump for steep hills
+    gravity: 60.0, // Snappier gravity
     outlineThickness: 0.015,
     camHeight: 12, // Closer camera
     camDistance: 22,

@@ -14,9 +14,16 @@ function pseudoNoise(x, y, z) {
 }
 
 // Planet Geometry
-// High subdivision for terrain detail, but 20 is too high for JS. Using 6.
-const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 6);
-const posAttribute = planetGeo.attributes.position;
+// Detail 5 = ~20k faces. Detail 20 crashes browsers (millions of faces).
+const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 5);
+
+// Convert to non-indexed for "Flat Shading" / Crystal look
+// This splits vertices so each face has unique normals
+planetGeo.deleteAttribute('normal');
+planetGeo.deleteAttribute('uv');
+const finalPlanetGeo = planetGeo.toNonIndexed(); 
+
+const posAttribute = finalPlanetGeo.attributes.position;
 const colors = [];
 
 const colorLow = new THREE.Color(CFG.colors.planetLow);
@@ -32,7 +39,7 @@ for (let i = 0; i < posAttribute.count; i++) {
     const v = new THREE.Vector3(x, y, z).normalize();
     // Noise determines height variation
     const noiseVal = pseudoNoise(x, y, z);
-    const height = CFG.planetRadius + (noiseVal * 6); // +/- 6 units of height
+    const height = CFG.planetRadius + (noiseVal * 8); // +/- height
     
     // Apply height
     v.multiplyScalar(height);
@@ -42,7 +49,7 @@ for (let i = 0; i < posAttribute.count; i++) {
     const relativeH = height - CFG.planetRadius;
     if(relativeH < -2) {
         colors.push(colorLow.r, colorLow.g, colorLow.b); // Sand
-    } else if (relativeH > 3) {
+    } else if (relativeH > 4) {
         colors.push(colorHigh.r, colorHigh.g, colorHigh.b); // Rock/Mountain
     } else {
         // Slight variation in grass
@@ -51,12 +58,11 @@ for (let i = 0; i < posAttribute.count; i++) {
     }
 }
 
-planetGeo.computeVertexNormals();
-planetGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+finalPlanetGeo.computeVertexNormals();
+finalPlanetGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-export const planet = new THREE.Mesh(planetGeo, mat.planet);
+export const planet = new THREE.Mesh(finalPlanetGeo, mat.planet);
 planet.receiveShadow = true;
-// Note: Outline on high-poly irregular mesh can be expensive/glitchy, omitting for planet
 scene.add(planet);
 
 
@@ -82,8 +88,13 @@ playerWrapper.add(playerMesh);
 const placeRaycaster = new THREE.Raycaster();
 
 function getSurfacePos(idealPos) {
-    placeRaycaster.set(idealPos.clone().normalize().multiplyScalar(CFG.planetRadius * 2), idealPos.clone().negate().normalize());
+    // Cast from high up towards center
+    const origin = idealPos.clone().normalize().multiplyScalar(CFG.planetRadius * 2);
+    const direction = origin.clone().negate().normalize();
+    
+    placeRaycaster.set(origin, direction);
     const intersects = placeRaycaster.intersectObject(planet);
+    
     if(intersects.length > 0) return intersects[0].point;
     return idealPos.normalize().multiplyScalar(CFG.planetRadius);
 }
@@ -147,7 +158,7 @@ function spawnObject(type, count) {
 }
 
 export function spawnNPC(id, dialogs) {
-    // Fixed positions for NPCs based on "seed" logic (hardcoded vectors here for starter)
+    // Random position seeded roughly
     const vec = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
     const surfacePos = getSurfacePos(vec);
     
@@ -178,6 +189,9 @@ export function buildWorld() {
     while(worldLayer.children.length > 0) worldLayer.remove(worldLayer.children[0]);
     state.scenery = [];
     state.npcs = [];
+
+    // Re-add planet
+    scene.add(planet);
 
     spawnObject('tree', 150);
     spawnObject('rock', 80);

@@ -26,8 +26,8 @@ scene.add(ambientLight);
 
 export const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
 dirLight.castShadow = true;
-// Increase shadow map size for larger world
-dirLight.shadow.mapSize.set(4096, 4096);
+// Increase shadow map size for larger world, but keep it reasonable
+dirLight.shadow.mapSize.set(2048, 2048);
 const shadowSize = 80;
 dirLight.shadow.camera.left = -shadowSize;
 dirLight.shadow.camera.right = shadowSize;
@@ -42,8 +42,8 @@ export const mat = {
     npc: new THREE.MeshToonMaterial({ color: CFG.colors.npc }),
     tree: new THREE.MeshToonMaterial({ color: CFG.colors.tree }),
     trunk: new THREE.MeshToonMaterial({ color: CFG.colors.trunk }),
-    // Switch to StandardMaterial for flat shading support
-    rock: new THREE.MeshStandardMaterial({ color: CFG.colors.rock, flatShading: true, roughness: 0.9, metalness: 0.1 }),
+    // Switch to Lambert or Standard for flat shading support (Toon doesn't support flatShading property in this version)
+    rock: new THREE.MeshLambertMaterial({ color: CFG.colors.rock, flatShading: true }),
     outline: new THREE.MeshBasicMaterial({ color: CFG.colors.outline, side: THREE.BackSide })
 };
 

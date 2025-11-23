@@ -5,9 +5,7 @@ import { scene, camera, renderer, dirLight } from './graphics.js';
 import { playerWrapper, playerMesh, planet, buildWorld, upVector } from './entities.js';
 
 const clock = new THREE.Clock();
-const smoothedForward = new THREE.Vector3(0, 0, 1);
 const tempQuat = new THREE.Quaternion();
-const dummyCam = new THREE.Object3D();
 const gravityRaycaster = new THREE.Raycaster();
 
 export function startGameLoop() {
@@ -43,14 +41,10 @@ export function startGameLoop() {
 
         // Dialogue Mode - Input advances text
         if (state.gameState === "DIALOGUE") {
-            if (state.keys['Space'] && !state.canInteract) { // Simple debounce needed in real app
-                // handled in keydown listener usually, but simple polling here:
-            }
             // Freeze physics in dialogue
         } else {
             // Normal Movement
             if (state.isMobile) {
-                // Joystick logic would go here, simplified to auto-forward on touch for starter
                 if(state.touchState.isTouching) {
                    moveSpeed = 1;
                    // Turn based on x position relative to center
@@ -121,8 +115,6 @@ export function startGameLoop() {
             }
 
             // 4. ORIENTATION (Align to planet surface)
-            // We want the player to stand 'up' relative to the sphere, but also slope slightly with terrain?
-            // For this art style, aligning to sphere normal is usually cleaner than terrain normal (which can be jagged).
             const currentUp = new THREE.Vector3(0, 1, 0).applyQuaternion(playerWrapper.quaternion);
             const targetUp = playerWrapper.position.clone().normalize();
             tempQuat.setFromUnitVectors(currentUp, targetUp);
@@ -190,8 +182,15 @@ export function handleAction() {
         document.getElementById('ui-layer').classList.remove('hidden');
         resetInputs();
         
-        // Teleport player to safe spot on surface
+        // TELEPORT PLAYER & CAMERA
         playerWrapper.position.set(0, CFG.planetRadius + 5, 0);
+        
+        // Snap camera immediately to behind player to avoid "blue void" fly-in
+        const snapOffset = new THREE.Vector3(0, CFG.camHeight, CFG.camDistance);
+        // We assume default rotation initially for the snap
+        snapOffset.add(playerWrapper.position);
+        camera.position.copy(snapOffset);
+        camera.lookAt(playerWrapper.position);
     } 
     else if (state.gameState === "PLAYING" && state.canInteract && state.keys['Space']) {
         startDialogue();
