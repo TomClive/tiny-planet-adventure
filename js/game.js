@@ -184,19 +184,28 @@ export function handleAction() {
         resetInputs();
         
         // TELEPORT PLAYER HIGH ABOVE SPAWN
-        // Use a safe height (Radius + 20) to ensure we don't spawn inside a mountain
-        playerWrapper.position.set(0, CFG.planetRadius + 20, 0);
+        // Use a safe off-center position to avoid North Pole singularities
+        // Spawning at z=5 ensures we have a valid forward vector different from Up
+        playerWrapper.position.set(0, CFG.planetRadius + 20, 5);
         playerWrapper.quaternion.identity(); // Reset rotation so Up is Y
         
+        // Rotate player slightly to align with the new surface normal at (0, R, 5)
+        const targetUp = playerWrapper.position.clone().normalize();
+        playerWrapper.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), targetUp);
+
         // Reset Physics
         state.playerVerticalSpeed = 0;
         
         // SNAP CAMERA
         // Force the camera to the correct position relative to the NEW player position immediately
         const snapOffset = new THREE.Vector3(0, CFG.camHeight, CFG.camDistance);
+        // Apply initial player rotation to offset
+        snapOffset.applyQuaternion(playerWrapper.quaternion);
+        
         camera.position.copy(playerWrapper.position).add(snapOffset);
-        camera.up.set(0, 1, 0); // Explicitly set Up vector for North Pole spawn
+        camera.up.copy(targetUp);
         camera.lookAt(playerWrapper.position);
+        camera.updateProjectionMatrix(); // Ensure internals are updated
         
         // Update Light immediately
         dirLight.position.copy(camera.position).add(new THREE.Vector3(10, 20, 10));

@@ -4,8 +4,8 @@ import { CFG } from './config.js';
 
 export const scene = new THREE.Scene();
 scene.background = new THREE.Color(CFG.colors.bg);
-// Fog matches sky, starts closer to fade out the curvature
-scene.fog = new THREE.Fog(CFG.colors.bg, CFG.planetRadius * 0.5, CFG.planetRadius * 1.5);
+// Fog disabled to prevent rendering issues in Orthographic view
+// scene.fog = new THREE.Fog(CFG.colors.bg, CFG.planetRadius * 0.5, CFG.planetRadius * 1.5);
 
 export const worldLayer = new THREE.Group();
 scene.add(worldLayer);
@@ -17,10 +17,11 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // RPG usually benefits from Perspective, but Ortho is key to this art style. 
 // We adjust the frustum to fit the larger world.
-const d = 40;
+// INCREASED VIEW SIZE to ensure we see the player on start
+const d = 60; 
 const aspect = window.innerWidth / window.innerHeight;
-// Increased Far plane to 2000 to prevent clipping large planet
-export const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 2000);
+// Increased Far plane to 4000 to prevent clipping
+export const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 4000);
 scene.add(camera);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -28,14 +29,14 @@ scene.add(ambientLight);
 
 export const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
 dirLight.castShadow = true;
-// Increase shadow map size for larger world, but keep it reasonable
+// Increase shadow map size for larger world
 dirLight.shadow.mapSize.set(2048, 2048);
-const shadowSize = 80;
+const shadowSize = 100;
 dirLight.shadow.camera.left = -shadowSize;
 dirLight.shadow.camera.right = shadowSize;
 dirLight.shadow.camera.top = shadowSize;
 dirLight.shadow.camera.bottom = -shadowSize;
-dirLight.shadow.camera.far = 200; // Ensure shadow camera reaches ground
+dirLight.shadow.camera.far = 400; // Ensure shadow camera reaches ground
 scene.add(dirLight);
 
 export const mat = {
@@ -45,7 +46,7 @@ export const mat = {
     npc: new THREE.MeshToonMaterial({ color: CFG.colors.npc }),
     tree: new THREE.MeshToonMaterial({ color: CFG.colors.tree }),
     trunk: new THREE.MeshToonMaterial({ color: CFG.colors.trunk }),
-    // Switch to Lambert for flat shading support (Toon doesn't support flatShading property well in all versions)
+    // Switch to Lambert for flat shading support
     rock: new THREE.MeshLambertMaterial({ color: CFG.colors.rock, flatShading: true }),
     outline: new THREE.MeshBasicMaterial({ color: CFG.colors.outline, side: THREE.BackSide })
 };
