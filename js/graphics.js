@@ -42,7 +42,8 @@ export const mat = {
     npc: new THREE.MeshToonMaterial({ color: CFG.colors.npc }),
     tree: new THREE.MeshToonMaterial({ color: CFG.colors.tree }),
     trunk: new THREE.MeshToonMaterial({ color: CFG.colors.trunk }),
-    rock: new THREE.MeshToonMaterial({ color: CFG.colors.rock, flatShading: true }),
+    // Switch to StandardMaterial for flat shading support
+    rock: new THREE.MeshStandardMaterial({ color: CFG.colors.rock, flatShading: true, roughness: 0.9, metalness: 0.1 }),
     outline: new THREE.MeshBasicMaterial({ color: CFG.colors.outline, side: THREE.BackSide })
 };
 

@@ -14,8 +14,8 @@ function pseudoNoise(x, y, z) {
 }
 
 // Planet Geometry
-// High subdivision for terrain detail
-const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 20);
+// High subdivision for terrain detail, but 20 is too high for JS. Using 6.
+const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 6);
 const posAttribute = planetGeo.attributes.position;
 const colors = [];
 
