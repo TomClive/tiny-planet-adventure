@@ -23,8 +23,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // RPG usually benefits from Perspective, but Ortho is key to this art style. 
 // We adjust the frustum to fit the larger world.
-// Reduced d from 60 to 24 to zoom in close to the action
-const d = 24; 
+// Reduced d from 24 to 16 to zoom in VERY close ("Close to the box")
+const d = 16; 
 const aspect = window.innerWidth / window.innerHeight;
 // Increased Far plane to 4000 to prevent clipping
 export const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 4000);

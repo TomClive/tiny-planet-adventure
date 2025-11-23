@@ -1,5 +1,6 @@
 
 
+
 export const CFG = {
     colors: {
         bg: 0x7cdbd5, // Teal sky
@@ -19,7 +20,9 @@ export const CFG = {
     jumpForce: 25.0, // Stronger jump for steep hills
     gravity: 60.0, // Snappier gravity
     outlineThickness: 0.015,
-    camHeight: 6, // Much closer camera (was 12)
-    camDistance: 12, // Much closer camera (was 22)
-    camLag: 0.1
+    // Camera is physically far away to avoid clipping terrain hills, 
+    // but the Orthographic lens (in graphics.js) is zoomed in tight.
+    camHeight: 45, 
+    camDistance: 45, 
+    camLag: 0.15
 };

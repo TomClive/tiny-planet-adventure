@@ -1,5 +1,6 @@
 
 
+
 import * as THREE from 'three';
 import { CFG } from './config.js';
 import { scene, worldLayer, mat, addOutline, dirLight } from './graphics.js';
@@ -9,10 +10,20 @@ export const upVector = new THREE.Vector3(0, 1, 0);
 
 // --- DETERMINISTIC TERRAIN ---
 // A simple pseudo-noise function to keep terrain fixed without external libs
+// Added extra octaves for "more geometry" detail
 function pseudoNoise(x, y, z) {
-    return Math.sin(x * 0.1) * Math.cos(z * 0.1) + 
-           Math.sin(y * 0.3) * 0.5 + 
-           Math.sin((x + z) * 0.5) * 0.25;
+    const s1 = 0.08;
+    const s2 = 0.15;
+    const s3 = 0.3;
+    
+    // Large features
+    let v = Math.sin(x * s1) * Math.cos(z * s1);
+    // Medium features
+    v += Math.sin(y * s2 + x * s2) * 0.5;
+    // Small detailed features
+    v += Math.sin((x + z) * s3) * 0.25;
+    
+    return v;
 }
 
 // Planet Geometry
@@ -43,7 +54,7 @@ for (let i = 0; i < posAttribute.count; i++) {
     const v = new THREE.Vector3(x, y, z).normalize();
     // Noise determines height variation
     const noiseVal = pseudoNoise(x, y, z);
-    const height = CFG.planetRadius + (noiseVal * 8); // +/- height
+    const height = CFG.planetRadius + (noiseVal * 10); // Slightly increased amplitude for terrain
     
     // Apply height
     v.multiplyScalar(height);
@@ -51,9 +62,9 @@ for (let i = 0; i < posAttribute.count; i++) {
 
     // Color based on height (relative to base radius)
     const relativeH = height - CFG.planetRadius;
-    if(relativeH < -2) {
+    if(relativeH < -4) {
         colors.push(colorLow.r, colorLow.g, colorLow.b); // Sand
-    } else if (relativeH > 4) {
+    } else if (relativeH > 6) {
         colors.push(colorHigh.r, colorHigh.g, colorHigh.b); // Rock/Mountain
     } else {
         // Slight variation in grass
@@ -122,7 +133,7 @@ function spawnObject(type, count) {
         
         // Don't spawn underwater/sand deep
         const dist = surfacePos.length();
-        if(dist < CFG.planetRadius - 1) continue; 
+        if(dist < CFG.planetRadius - 2) continue; 
 
         const group = new THREE.Group();
         group.position.copy(surfacePos);
