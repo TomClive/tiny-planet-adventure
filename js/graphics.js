@@ -1,3 +1,4 @@
+
 import * as THREE from 'three';
 import { CFG } from './config.js';
 
@@ -18,7 +19,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 // We adjust the frustum to fit the larger world.
 const d = 40;
 const aspect = window.innerWidth / window.innerHeight;
-export const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 500);
+// Increased Far plane to 2000 to prevent clipping large planet
+export const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 2000);
 scene.add(camera);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -33,6 +35,7 @@ dirLight.shadow.camera.left = -shadowSize;
 dirLight.shadow.camera.right = shadowSize;
 dirLight.shadow.camera.top = shadowSize;
 dirLight.shadow.camera.bottom = -shadowSize;
+dirLight.shadow.camera.far = 200; // Ensure shadow camera reaches ground
 scene.add(dirLight);
 
 export const mat = {
@@ -42,7 +45,7 @@ export const mat = {
     npc: new THREE.MeshToonMaterial({ color: CFG.colors.npc }),
     tree: new THREE.MeshToonMaterial({ color: CFG.colors.tree }),
     trunk: new THREE.MeshToonMaterial({ color: CFG.colors.trunk }),
-    // Switch to Lambert or Standard for flat shading support (Toon doesn't support flatShading property in this version)
+    // Switch to Lambert for flat shading support (Toon doesn't support flatShading property well in all versions)
     rock: new THREE.MeshLambertMaterial({ color: CFG.colors.rock, flatShading: true }),
     outline: new THREE.MeshBasicMaterial({ color: CFG.colors.outline, side: THREE.BackSide })
 };

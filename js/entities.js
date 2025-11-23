@@ -1,3 +1,4 @@
+
 import * as THREE from 'three';
 import { CFG } from './config.js';
 import { scene, worldLayer, mat, addOutline, dirLight } from './graphics.js';
@@ -21,7 +22,9 @@ const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 4);
 // This splits vertices so each face has unique normals
 planetGeo.deleteAttribute('normal');
 planetGeo.deleteAttribute('uv');
-const finalPlanetGeo = planetGeo.toNonIndexed(); 
+
+// Check if index exists before converting to avoid warnings
+const finalPlanetGeo = planetGeo.index ? planetGeo.toNonIndexed() : planetGeo; 
 
 const posAttribute = finalPlanetGeo.attributes.position;
 const colors = [];
