@@ -1,4 +1,5 @@
 
+
 import * as THREE from 'three';
 import { CFG } from './config.js';
 import { scene, worldLayer, mat, addOutline, dirLight } from './graphics.js';
@@ -15,8 +16,8 @@ function pseudoNoise(x, y, z) {
 }
 
 // Planet Geometry
-// Detail 4 = ~5k faces. Safe for all devices.
-const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 4);
+// Detail 6 = High resolution terrain
+const planetGeo = new THREE.IcosahedronGeometry(CFG.planetRadius, 6);
 
 // Convert to non-indexed for "Flat Shading" / Crystal look
 // This splits vertices so each face has unique normals
