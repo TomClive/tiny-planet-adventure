@@ -1,4 +1,5 @@
 
+
 import * as THREE from 'three';
 import { CFG } from './config.js';
 import { state, resetInputs } from './state.js';
@@ -93,9 +94,11 @@ export function startGameLoop() {
             const planetCenter = new THREE.Vector3(0,0,0);
             const playerDir = playerPos.clone().sub(planetCenter).normalize();
             
-            // Cast from slightly above predicted position
-            // Ensure we don't start inside
-            const rayStartDist = Math.max(playerPos.length(), CFG.planetRadius + 5);
+            // IMPROVED RAYCAST:
+            // Always cast from high up (atmosphere) down to the center.
+            // This prevents starting the ray inside a mountain if the player jumps into it.
+            // Max terrain noise is approx +10, so +50 is safe.
+            const rayStartDist = CFG.planetRadius + 50;
             const rayOrigin = playerDir.clone().multiplyScalar(rayStartDist);
             
             gravityRaycaster.set(rayOrigin, playerDir.clone().negate());
@@ -113,22 +116,34 @@ export function startGameLoop() {
             let nextDist = currentDist + (state.playerVerticalSpeed * dt);
 
             // Ground Collision
-            if (nextDist <= groundHeight) {
-                nextDist = groundHeight;
-                state.playerVerticalSpeed = 0;
-                state.isGrounded = true;
-                
-                // JUMP
-                if(jump) {
-                    state.playerVerticalSpeed = CFG.jumpForce;
-                    state.isGrounded = false;
+            // Use a small buffer (0.1) to prevent flickering "isGrounded" state
+            if (nextDist <= groundHeight + 0.1) {
+                // Only snap if falling or moving slowly (not jumping up)
+                if(state.playerVerticalSpeed <= 0) {
+                    nextDist = groundHeight;
+                    state.playerVerticalSpeed = 0;
+                    state.isGrounded = true;
+                    
+                    // JUMP
+                    if(jump) {
+                        state.playerVerticalSpeed = CFG.jumpForce;
+                        state.isGrounded = false;
+                        // Move slightly up immediately to break contact
+                        nextDist += 0.5;
+                    }
                 }
             } else {
                 state.isGrounded = false;
             }
             
-            // SAFETY: Don't fall through center
-            if(nextDist < 10) nextDist = CFG.planetRadius;
+            // ANTI-TUNNELING SAFETY NET
+            // If player falls way below surface (lag spike / glitch), snap them back.
+            if(nextDist < CFG.planetRadius - 10) {
+                console.warn("Tunneling detected! Snapping to surface.");
+                nextDist = groundHeight;
+                state.playerVerticalSpeed = 0;
+                state.isGrounded = true;
+            }
 
             // Apply Height
             playerWrapper.position.copy(playerDir.multiplyScalar(nextDist));

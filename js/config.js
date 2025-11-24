@@ -1,6 +1,8 @@
 
 
 
+
+
 export const CFG = {
     colors: {
         bg: 0x7cdbd5, // Teal sky
@@ -17,8 +19,8 @@ export const CFG = {
     planetRadius: 120, // Much larger world
     moveSpeed: 12.0,
     turnSpeed: 4.0,
-    jumpForce: 25.0, // Stronger jump for steep hills
-    gravity: 60.0, // Snappier gravity
+    jumpForce: 28.0, // Stronger jump for steep hills and snappy feel
+    gravity: 70.0, // Stronger gravity to prevent floatiness
     outlineThickness: 0.015,
     // Camera is physically far away to avoid clipping terrain hills, 
     // but the Orthographic lens (in graphics.js) is zoomed in tight.
